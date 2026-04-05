@@ -1,3 +1,101 @@
+# connect-mcp
+
+> Connect any MCP server to Claude Desktop in seconds — no config editing, no guesswork.
+
+[![npm version](https://img.shields.io/npm/v/connect-mcp.svg)](https://www.npmjs.com/package/connect-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/yourusername/connect-mcp/pulls)
+
+---
+
+## The problem
+
+Integrating an MCP (Model Context Protocol) server into Claude Desktop means hunting down a JSON config file, understanding the exact schema, manually editing it, and restarting the app — all before you've written a single line of actual code. One typo breaks everything with no useful error message.
+
+`connect-mcp` fixes this with a single command.
+
+---
+
+## Quick start
+```bash
+npx connect-mcp add --name "my-tool" --command "npx my-mcp-server"
+```
+
+That's it. Your MCP server is now registered in Claude Desktop. Restart the app and it's live.
+
+---
+
+## Installation
+
+You can use `connect-mcp` without installing it:
+```bash
+npx connect-mcp <command>
+```
+
+Or install it globally:
+```bash
+npm install -g connect-mcp
+```
+
+---
+
+## Usage
+
+### Add an MCP server
+```bash
+connect-mcp add --name <name> --command <command> [options]
+```
+
+**Options:**
+
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--name` | A unique name for this integration | `"filesystem"` |
+| `--command` | The command used to start the MCP server | `"npx @modelcontextprotocol/server-filesystem"` |
+| `--args` | Additional arguments passed to the command | `"/Users/me/docs"` |
+| `--env` | Environment variables (key=value pairs) | `API_KEY=abc123` |
+| `--force` | Overwrite an existing integration with the same name | |
+
+**Examples:**
+```bash
+# Connect a filesystem MCP server
+connect-mcp add \
+  --name "filesystem" \
+  --command "npx @modelcontextprotocol/server-filesystem" \
+  --args "/Users/me/projects"
+
+# Connect a server with environment variables
+connect-mcp add \
+  --name "github" \
+  --command "npx @modelcontextprotocol/server-github" \
+  --env GITHUB_TOKEN=your_token_here
+
+# Connect a locally built MCP server
+connect-mcp add \
+  --name "my-custom-tool" \
+  --command "node" \
+  --args "/path/to/my/server/index.js"
+```
+
+---
+
+### Interactive setup
+
+Not sure about the flags? Run the wizard:
+```bash
+connect-mcp add --interactive
+```
+
+You'll be guided through each step with prompts, validation, and helpful hints.
+
+---
+
+### List connected servers
+```bash
+connect-mcp list
+```
+
+Output:
 ---
 
 ### Remove a server
