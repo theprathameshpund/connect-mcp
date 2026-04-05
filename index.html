@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>connect-mcp — Connect MCP servers to Claude Desktop instantly</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green:        #00ff87;
+  --green-dim:    #00c866;
+  --green-glow:   rgba(0,255,135,0.22);
+  --red:          #ff4d6a;
+  --amber:        #ffb800;
+  --blue:         #61d6ff;
+  --orange:       #ff9e64;
+  --bg:           #07090b;
+  --bg2:          #0c1016;
+  --bg3:          #111820;
+  --bg4:          #161f28;
+  --border:       rgba(0,255,135,0.10);
+  --border-mid:   rgba(0,255,135,0.20);
+  --border-hi:    rgba(0,255,135,0.38);
+  --text:         #dde4ec;
+  --text-mid:     #6e7f90;
+  --text-low:     #34424f;
+  --mono:         'JetBrains Mono', monospace;
+  --sans:         'Syne', sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* grid */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,255,135,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,135,0.025) 1px, transparent 1px);
+  background-size: 44px 44px;
+  pointer-events: none; z-index: 0;
+}
+/* scanlines */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px);
+  pointer-events: none; z-index: 0;
+}
+
+.noise {
+  position: fixed; inset: 0; opacity: 0.022; pointer-events: none; z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+.orb { position: fixed; border-radius: 50%; filter: blur(130px); pointer-events: none; z-index: 0; animation: orb-pulse 9s ease-in-out infinite; }
+.orb1 { width: 700px; height: 700px; background: rgba(0,255,135,0.035); top: -250px; left: -250px; }
+.orb2 { width: 450px; height: 450px; background: rgba(0,180,90,0.025); bottom: -150px; right: -150px; animation-delay: -4.5s; }
+@keyframes orb-pulse { 0%,100%{opacity:.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.08)} }
+
+.cursor-glow {
+  position: fixed; width: 380px; height: 380px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,255,135,0.035) 0%, transparent 68%);
+  pointer-events: none; z-index: 1; transform: translate(-50%,-50%);
+}
+
+.wrapper { position: relative; z-index: 2; max-width: 880px; margin: 0 auto; padding: 0 28px; }
+
+/* ── NAV ── */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 22px 0; border-bottom: 1px solid var(--border);
+}
+.nav-logo {
+  font-weight: 700; font-size: 14px; color: var(--green); text-decoration: none;
+  letter-spacing: .04em; display: flex; align-items: center; gap: 6px;
+}
+.nav-logo .prompt { color: var(--text-mid); font-weight: 300; }
+.nav-links { display: flex; gap: 28px; align-items: center; }
+.nav-links a {
+  font-size: 11px; color: var(--text-mid); text-decoration: none;
+  letter-spacing: .1em; text-transform: uppercase; transition: color .2s;
+}
+.nav-links a:hover { color: var(--green); }
+.nav-links .gh-btn {
+  border: 1px solid var(--border-mid); padding: 6px 14px; border-radius: 3px;
+  transition: border-color .2s, color .2s;
+}
+.nav-links .gh-btn:hover { border-color: var(--border-hi); color: var(--green); }
+
+/* ── HERO ── */
+.hero { padding: 88px 0 64px; text-align: center; }
+
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 10px; letter-spacing: .15em; text-transform: uppercase;
+  color: var(--green); border: 1px solid var(--border-hi);
+  padding: 5px 16px; border-radius: 2px; margin-bottom: 44px;
+  animation: rise .7s ease both;
+}
+.live-dot {
+  width: 6px; height: 6px; background: var(--green); border-radius: 50%;
+  box-shadow: 0 0 8px var(--green); animation: blink 1.4s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+.hero h1 {
+  font-family: var(--sans); font-size: clamp(44px, 8vw, 82px);
+  font-weight: 800; line-height: .95; letter-spacing: -.03em;
+  margin-bottom: 28px; animation: rise .7s .08s ease both;
+}
+.hero h1 em { font-style: normal; color: var(--green); text-shadow: 0 0 60px var(--green-glow); }
+
+.hero-sub {
+  font-size: 14px; color: var(--text-mid); max-width: 480px; margin: 0 auto 52px;
+  line-height: 1.8; font-weight: 300; animation: rise .7s .16s ease both;
+}
+
+.hero-quickcmd {
+  display: inline-flex; align-items: stretch; gap: 0;
+  background: var(--bg2); border: 1px solid var(--border-hi);
+  border-radius: 5px; overflow: hidden; font-size: 13px;
+  box-shadow: 0 0 50px rgba(0,255,135,0.06), inset 0 1px 0 rgba(255,255,255,0.03);
+  animation: rise .7s .24s ease both; margin-bottom: 10px;
+}
+.hero-quickcmd .qc-text {
+  padding: 13px 22px; color: var(--text-mid); white-space: nowrap;
+}
+.qc-copy {
+  border: none; border-left: 1px solid var(--border); background: rgba(0,255,135,0.04);
+  color: var(--text-mid); font-family: var(--mono); font-size: 11px; padding: 0 18px;
+  cursor: pointer; transition: all .2s; letter-spacing: .06em;
+}
+.qc-copy:hover { background: rgba(0,255,135,0.1); color: var(--green); }
+
+@keyframes rise { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── SECTION LABEL ── */
+.sl {
+  font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--green);
+  margin-bottom: 20px; display: flex; align-items: center; gap: 12px;
+}
+.sl::after { content:''; flex:1; height:1px; background: var(--border); }
+
+/* ── GENERATOR ── */
+.generator {
+  background: var(--bg2); border: 1px solid var(--border-hi); border-radius: 8px;
+  overflow: hidden; margin-bottom: 88px;
+  box-shadow: 0 0 100px rgba(0,255,135,0.04), 0 0 0 1px rgba(0,0,0,.5);
+  animation: rise .7s .3s ease both;
+}
+
+.win-bar {
+  display: flex; align-items: center; gap: 8px; padding: 13px 18px;
+  border-bottom: 1px solid var(--border); background: rgba(0,255,135,0.025);
+  user-select: none;
+}
+.wd { width: 11px; height: 11px; border-radius: 50%; }
+.wd-r{background:#ff5f57} .wd-y{background:#febc2e} .wd-g{background:#28c840}
+.win-title { font-size: 11px; color: var(--text-low); margin-left: 10px; letter-spacing: .06em; }
+
+.gen-form { padding: 32px 32px 28px; }
+
+.field { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
+.field label {
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-mid);
+}
+.field label .req { color: var(--green); margin-left: 3px; }
+
+.field input, .field select {
+  background: var(--bg3); border: 1px solid var(--border-mid); border-radius: 4px;
+  color: var(--text); font-family: var(--mono); font-size: 13px;
+  padding: 11px 14px; outline: none; transition: border-color .2s, box-shadow .2s;
+  appearance: none; -webkit-appearance: none;
+}
+.field input::placeholder { color: var(--text-low); }
+.field input:focus, .field select:focus {
+  border-color: var(--green-dim); box-shadow: 0 0 0 3px rgba(0,255,135,0.07);
+}
+.field input.err { border-color: var(--red) !important; box-shadow: 0 0 0 3px rgba(255,77,106,.07) !important; }
+.field select {
+  cursor: pointer; padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%2300ff87' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 13px center;
+}
+.field select option { background: #131920; }
+
+/* inline row for URL + platform */
+.input-row { display: grid; grid-template-columns: 1fr 200px; gap: 14px; }
+@media(max-width:560px){ .input-row{ grid-template-columns:1fr; } }
+
+/* live url hint */
+.url-hint {
+  font-size: 11px; margin-bottom: 16px; min-height: 16px;
+  display: flex; align-items: center; gap: 6px;
+}
+.url-hint .good { color: var(--green); }
+.url-hint .bad  { color: var(--red); }
+.url-hint .warn { color: var(--amber); }
+
+/* warning strip */
+.warn-strip {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: rgba(255,184,0,.05); border: 1px solid rgba(255,184,0,.2);
+  border-radius: 4px; padding: 10px 14px; font-size: 11px;
+  color: rgba(255,184,0,.85); line-height: 1.65; margin-bottom: 22px;
+}
+.ic { font-family: var(--mono); background: rgba(255,77,106,.12); color: var(--red); border: 1px solid rgba(255,77,106,.25); border-radius: 2px; padding: 1px 5px; font-size: 10px; }
+.gc { font-family: var(--mono); background: rgba(0,255,135,.08); color: var(--green); border: 1px solid rgba(0,255,135,.2); border-radius: 2px; padding: 1px 5px; font-size: 10px; }
+
+.gen-btn {
+  width: 100%; padding: 14px; background: var(--green); color: #000;
+  border: none; border-radius: 4px; font-family: var(--mono);
+  font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  cursor: pointer; transition: all .2s; position: relative; overflow: hidden;
+}
+.gen-btn::after {
+  content:''; position:absolute; inset:0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.18) 50%, transparent 70%);
+  transform: translateX(-100%); transition: transform .45s;
+}
+.gen-btn:hover { background:#00e87b; box-shadow: 0 0 40px rgba(0,255,135,.28); }
+.gen-btn:hover::after { transform: translateX(100%); }
+.gen-btn:active { transform: scale(.99); }
+
+/* ── OUTPUT PANEL ── */
+.output-panel {
+  border-top: 1px solid var(--border); display: none;
+  animation: rise .35s ease both;
+}
+.output-panel.visible { display: block; }
+
+.tab-row {
+  display: flex; gap: 0; border-bottom: 1px solid var(--border);
+  padding: 0 32px; background: rgba(0,0,0,.15);
+}
+.tab-btn {
+  font-size: 11px; font-family: var(--mono); letter-spacing: .07em;
+  padding: 11px 18px; cursor: pointer; color: var(--text-mid);
+  border: none; border-bottom: 2px solid transparent; background: none;
+  margin-bottom: -1px; transition: color .2s, border-color .2s;
+}
+.tab-btn.on { color: var(--green); border-bottom-color: var(--green); }
+.tab-btn:hover:not(.on) { color: var(--text); }
+
+.tab-pane { display: none; padding: 26px 32px 30px; }
+.tab-pane.on { display: block; }
+
+.cb {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 5px; overflow: hidden; margin-bottom: 14px;
+}
+.cb-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,.015);
+}
+.cb-lbl { font-size: 10px; color: var(--text-low); letter-spacing: .1em; text-transform: uppercase; }
+.cp-btn {
+  background: none; border: 1px solid var(--border); border-radius: 2px;
+  color: var(--text-mid); font-family: var(--mono); font-size: 10px;
+  padding: 3px 10px; cursor: pointer; transition: all .2s; letter-spacing: .05em;
+}
+.cp-btn:hover { color: var(--green); border-color: var(--border-hi); }
+.cp-btn.ok   { color: var(--green); border-color: var(--green); }
+
+.cb-body { padding: 14px 16px; font-size: 13px; line-height: 1.55; word-break: break-all; }
+.cb-body .p  { color: var(--green); user-select: none; }
+.cb-body .kw { color: var(--blue); }
+.cb-body .fl { color: var(--amber); }
+.cb-body .vl { color: var(--orange); }
+.cb-body .cm { color: var(--text-low); font-style: italic; }
+
+.json-body {
+  padding: 14px 16px; font-size: 12px; line-height: 1.75;
+  white-space: pre; overflow-x: auto;
+}
+.json-body .jk { color: var(--blue); }
+.json-body .jv { color: #a8ff78; }
+.json-body .jp { color: var(--text-mid); }
+
+.note { font-size: 12px; color: var(--text-mid); line-height: 1.75; margin-top: 10px; }
+.note .g { color: var(--green); }
+.note code { background: var(--bg3); border: 1px solid var(--border); border-radius: 2px; padding: 1px 6px; font-size: 11px; color: var(--green); }
+
+/* ── DIVIDER ── */
+.divider { height:1px; background: linear-gradient(90deg, transparent, var(--border-mid), transparent); margin: 0 0 88px; }
+
+/* ── SECTIONS ── */
+.section { margin-bottom: 88px; }
+
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); gap: 14px; margin-top: 24px; }
+.step {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 5px;
+  padding: 24px 20px; position: relative; overflow: hidden;
+  transition: border-color .2s, box-shadow .2s; cursor: default;
+}
+.step::before { content:''; position:absolute; top:0;left:0;width:2px;height:100%;background:var(--green);opacity:0;transition:opacity .2s; }
+.step:hover { border-color: var(--border-hi); box-shadow: 0 0 28px rgba(0,255,135,.05); }
+.step:hover::before { opacity:1; }
+.step-n { font-size: 10px; color: var(--green); letter-spacing:.14em; margin-bottom:12px; }
+.step h3 { font-family: var(--sans); font-size: 15px; font-weight: 700; margin-bottom:9px; }
+.step p  { font-size: 12px; color: var(--text-mid); line-height: 1.7; }
+
+.modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap: 14px; margin-top: 24px; }
+.mode {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 5px;
+  padding: 26px 22px; transition: border-color .2s;
+}
+.mode:hover { border-color: var(--border-hi); }
+.mode-n { font-size: 10px; color: var(--green); letter-spacing:.14em; margin-bottom:10px; }
+.mode h3 { font-family: var(--sans); font-size: 16px; font-weight:700; margin-bottom:8px; }
+.mode p  { font-size: 12px; color: var(--text-mid); line-height:1.65; margin-bottom:16px; }
+.mode-cmd {
+  background: var(--bg); border:1px solid var(--border); border-radius:3px;
+  padding: 10px 14px; font-size: 12px; color: var(--text-mid); word-break: break-all;
+}
+.mode-cmd .g { color: var(--green); }
+.mode-cmd .b { color: var(--blue); }
+.mode-cmd .o { color: var(--orange); }
+.mode-cmd .a { color: var(--amber); }
+
+.tbl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 24px; }
+@media(max-width:600px){ .tbl-grid{ grid-template-columns:1fr; } }
+.tbl-card { background: var(--bg2); border:1px solid var(--border); border-radius:5px; overflow:hidden; }
+.tbl-head { padding: 10px 16px; border-bottom:1px solid var(--border); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-mid); background:rgba(0,255,135,.025); }
+table { width:100%; border-collapse:collapse; }
+td { padding: 10px 16px; font-size:12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+td:first-child { color:var(--text-mid); font-size:11px; letter-spacing:.03em; }
+.bdg { display:inline-block; font-size:10px; padding:2px 9px; border-radius:2px; letter-spacing:.04em; font-family:var(--mono); }
+.bdg-g { background:rgba(0,255,135,.08); color:var(--green); border:1px solid rgba(0,255,135,.18); }
+.bdg-a { background:rgba(255,184,0,.08); color:var(--amber); border:1px solid rgba(255,184,0,.2); }
+.bdg-r { background:rgba(255,77,106,.08); color:var(--red); border:1px solid rgba(255,77,106,.2); }
+
+.faq-list { margin-top: 24px; display:flex; flex-direction:column; gap:10px; }
+.faq-item { border:1px solid var(--border); border-radius:5px; overflow:hidden; transition:border-color .2s; }
+.faq-item:hover { border-color: var(--border-mid); }
+.faq-q {
+  padding: 15px 20px; font-size: 13px; cursor:pointer;
+  display:flex; justify-content:space-between; align-items:center;
+  background: var(--bg2); user-select:none; transition:color .2s; gap:12px;
+}
+.faq-q:hover { color:var(--green); }
+.faq-arrow { color:var(--text-low); transition:transform .25s; font-size:11px; flex-shrink:0; }
+.faq-item.open .faq-arrow { transform:rotate(180deg); color:var(--green); }
+.faq-a {
+  max-height:0; overflow:hidden; transition:max-height .3s ease, padding .3s;
+  font-size:12px; color:var(--text-mid); line-height:1.8; background: var(--bg2);
+}
+.faq-item.open .faq-a { max-height:260px; padding:0 20px 16px; border-top:1px solid var(--border); }
+.faq-a code { background:var(--bg3); border:1px solid var(--border); border-radius:2px; padding:1px 6px; font-size:11px; color:var(--green); }
+
+.rm-list { margin-top:24px; display:flex; flex-direction:column; gap:9px; }
+.rm-item {
+  display:flex; align-items:center; gap:14px; padding:13px 18px;
+  background:var(--bg2); border:1px solid var(--border); border-radius:4px;
+  font-size:12px; color:var(--text-mid); transition:border-color .2s;
+}
+.rm-item:hover { border-color:var(--border-mid); }
+.rm-item.done { border-left:2px solid var(--green); color:var(--text); }
+.rm-item .ri { flex-shrink:0; font-size:13px; }
+.rm-item.done .ri { color:var(--green); }
+
+footer {
+  border-top:1px solid var(--border); padding: 28px 0 40px;
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:11px; color:var(--text-low); flex-wrap:wrap; gap:12px;
+}
+footer a { color:var(--text-mid); text-decoration:none; transition:color .2s; }
+footer a:hover { color:var(--green); }
+.f-logo { color:var(--green); font-weight:700; }
+
+.toast {
+  position:fixed; bottom:28px; right:28px; z-index:200;
+  background:var(--bg3); border:1px solid var(--green); border-radius:4px;
+  padding:11px 18px; font-size:12px; color:var(--green);
+  transform:translateY(16px); opacity:0; transition:all .25s; pointer-events:none;
+  display:flex; align-items:center; gap:8px;
+}
+.toast.show { transform:translateY(0); opacity:1; }
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="cursor-glow" id="cursorGlow"></div>
+
+<div class="wrapper">
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo"><span class="prompt">$</span> connect-mcp</a>
+    <div class="nav-links">
+      <a href="#generator">Generator</a>
+      <a href="#how">Docs</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/theprathameshpund/connect-mcp" target="_blank" class="gh-btn">GitHub ↗</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge"><div class="live-dot"></div>Claude Desktop — v1.0</div>
+    <h1>MCP setup.<br><em>One command.</em></h1>
+    <p class="hero-sub">
+      Stop editing JSON by hand. Enter your server URL,<br>pick your platform — get the exact command.
+    </p>
+    <div class="hero-quickcmd">
+      <span class="qc-text">
+        <span style="color:var(--text-low)">$</span>&nbsp;
+        npx connect-mcp&nbsp;
+        <span style="color:var(--blue)">claude</span>&nbsp;
+        <span style="color:var(--amber)">--url</span>&nbsp;
+        <span style="color:var(--orange)">&lt;your-mcp-url&gt;</span>
+      </span>
+      <button class="qc-copy" onclick="quickCopy(this)">copy</button>
+    </div>
+  </section>
+
+  <!-- GENERATOR -->
+  <section id="generator" style="margin-bottom:88px">
+    <div class="sl">Command Generator</div>
+
+    <div class="generator">
+      <div class="win-bar">
+        <div class="wd wd-r"></div>
+        <div class="wd wd-y"></div>
+        <div class="wd wd-g"></div>
+        <span class="win-title">connect-mcp — command generator</span>
+      </div>
+
+      <div class="gen-form">
+
+        <div class="input-row" style="margin-bottom:0">
+          <div class="field">
+            <label>MCP Server URL <span class="req">*</span></label>
+            <input type="url" id="mcpUrl"
+              placeholder="https://your-domain.com/mcp  or  http://localhost:8000/mcp"
+              autocomplete="off" spellcheck="false"
+              oninput="onUrlInput(this)" />
+          </div>
+          <div class="field">
+            <label>Platform</label>
+            <select id="platform">
+              <option value="claude">Claude Desktop</option>
+              <option value="cursor" disabled>Cursor (soon)</option>
+              <option value="vscode" disabled>VS Code (soon)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="url-hint" id="urlHint" style="margin-top:8px"></div>
+
+        <div class="warn-strip">
+          <span style="flex-shrink:0;margin-top:1px">⚠</span>
+          <span>
+            Always use <span class="gc">/mcp</span> — never <span class="ic">/mcp/sse</span>.
+            The <span class="ic">/sse</span> endpoint is internal and will fail silently.
+          </span>
+        </div>
+
+        <button class="gen-btn" onclick="generate()">⚡ &nbsp;Generate Commands</button>
+      </div>
+
+      <!-- OUTPUT -->
+      <div class="output-panel" id="outputPanel">
+        <div class="tab-row">
+          <button class="tab-btn on"  onclick="switchTab('cli',  this)">CLI</button>
+          <button class="tab-btn"     onclick="switchTab('auto', this)">Auto / Interactive</button>
+          <button class="tab-btn"     onclick="switchTab('json', this)">Config JSON</button>
+        </div>
+
+        <!-- CLI TAB -->
+        <div class="tab-pane on" id="tab-cli">
+          <div class="cb">
+            <div class="cb-head">
+              <span class="cb-lbl">Recommended</span>
+              <button class="cp-btn" onclick="copyBlock('cmd-cli', this)">copy</button>
+            </div>
+            <div class="cb-body" id="cmd-cli"></div>
+          </div>
+          <p class="note">Run this, then <strong style="color:var(--text)">restart Claude Desktop</strong>. Your MCP tools will be live.</p>
+        </div>
+
+        <!-- AUTO / INTERACTIVE TAB -->
+        <div class="tab-pane" id="tab-auto">
+          <div class="cb">
+            <div class="cb-head">
+              <span class="cb-lbl">Auto mode — omit the platform flag</span>
+              <button class="cp-btn" onclick="copyBlock('cmd-auto', this)">copy</button>
+            </div>
+            <div class="cb-body" id="cmd-auto"></div>
+          </div>
+
+          <div class="cb" style="margin-top:14px">
+            <div class="cb-head">
+              <span class="cb-lbl">Interactive wizard — no flags at all</span>
+              <button class="cp-btn" onclick="copyBlock('cmd-wizard', this)">copy</button>
+            </div>
+            <div class="cb-body" id="cmd-wizard"></div>
+          </div>
+          <p class="note" style="margin-top:10px">The wizard prompts you for the URL and platform step by step.</p>
+        </div>
+
+        <!-- JSON TAB -->
+        <div class="tab-pane" id="tab-json">
+          <div class="cb">
+            <div class="cb-head">
+              <span class="cb-lbl" id="jsonPathLbl">~/Library/Application Support/Claude/claude_desktop_config.json</span>
+              <button class="cp-btn" onclick="copyBlock('cmd-json', this)">copy</button>
+            </div>
+            <div class="json-body" id="cmd-json"></div>
+          </div>
+          <p class="note"><span class="g">✔</span> <code>connect-mcp</code> writes this for you automatically. This tab is for reference only.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- HOW IT WORKS -->
+  <section class="section" id="how">
+    <div class="sl">How it works</div>
+    <div class="steps">
+      <div class="step" style="animation:rise .5s .0s ease both">
+        <div class="step-n">01 // locate</div>
+        <h3>Finds config</h3>
+        <p>Auto-detects Claude Desktop's config file path for your OS — macOS or Windows.</p>
+      </div>
+      <div class="step" style="animation:rise .5s .1s ease both">
+        <div class="step-n">02 // merge</div>
+        <h3>Safely updates</h3>
+        <p>Merges only the <code style="font-size:11px;color:var(--green)">mcpServers</code> key. All other settings are untouched. Creates the file if missing.</p>
+      </div>
+      <div class="step" style="animation:rise .5s .2s ease both">
+        <div class="step-n">03 // validate</div>
+        <h3>Validates JSON</h3>
+        <p>Checks the result is well-formed before writing. Backs up the original config automatically.</p>
+      </div>
+      <div class="step" style="animation:rise .5s .3s ease both">
+        <div class="step-n">04 // done</div>
+        <h3>Restart &amp; go</h3>
+        <p>One restart of Claude Desktop and your MCP tools are live — no debugging, no guesswork.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 WAYS -->
+  <section class="section">
+    <div class="sl">3 ways to connect</div>
+    <div class="modes">
+      <div class="mode">
+        <div class="mode-n">Mode 01</div>
+        <h3>CLI — recommended</h3>
+        <p>Pass platform then URL as flags. Explicit, fast, CI-friendly.</p>
+        <div class="mode-cmd">
+          <span class="g">$</span> npx connect-mcp <span class="b">claude</span> <span class="a">--url</span> <span class="o">&lt;URL&gt;</span>
+        </div>
+      </div>
+      <div class="mode">
+        <div class="mode-n">Mode 02</div>
+        <h3>Auto mode</h3>
+        <p>Omit the platform — defaults to Claude automatically.</p>
+        <div class="mode-cmd">
+          <span class="g">$</span> npx connect-mcp <span class="a">--url</span> <span class="o">&lt;URL&gt;</span>
+        </div>
+      </div>
+      <div class="mode">
+        <div class="mode-n">Mode 03</div>
+        <h3>Interactive wizard</h3>
+        <p>No flags needed. Get prompted for everything step by step.</p>
+        <div class="mode-cmd">
+          <span class="g">$</span> npx connect-mcp
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SUPPORT MATRIX -->
+  <section class="section">
+    <div class="sl">Support matrix</div>
+    <div class="tbl-grid">
+      <div class="tbl-card">
+        <div class="tbl-head">Platforms</div>
+        <table>
+          <tr><td>Claude Desktop</td><td><span class="bdg bdg-g">✔ supported</span></td></tr>
+          <tr><td>Cursor</td><td><span class="bdg bdg-a">🚧 planned</span></td></tr>
+          <tr><td>VS Code</td><td><span class="bdg bdg-a">🚧 planned</span></td></tr>
+          <tr><td>Continue.dev</td><td><span class="bdg bdg-a">🚧 planned</span></td></tr>
+        </table>
+      </div>
+      <div class="tbl-card">
+        <div class="tbl-head">Transport</div>
+        <table>
+          <tr><td>HTTP / SSE</td><td><span class="bdg bdg-g">✔ supported</span></td></tr>
+          <tr><td>Cloudflare Tunnel</td><td><span class="bdg bdg-g">✔ recommended</span></td></tr>
+          <tr><td>Local command</td><td><span class="bdg bdg-a">🚧 coming soon</span></td></tr>
+          <tr><td>ngrok</td><td><span class="bdg bdg-g">✔ supported</span></td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section" id="faq">
+    <div class="sl">FAQ</div>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Do I need to restart Claude Desktop after connecting?<span class="faq-arrow">▾</span></div>
+        <div class="faq-a">Yes — Claude Desktop reads the config on startup. One restart is all you need. After that, your tools are persistent across sessions.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Will this break my existing Claude Desktop config?<span class="faq-arrow">▾</span></div>
+        <div class="faq-a">No. <code>connect-mcp</code> only modifies the <code>mcpServers</code> key. Everything else — theme, history, preferences — is left untouched. A backup is written before any change.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">What if the config file doesn't exist yet?<span class="faq-arrow">▾</span></div>
+        <div class="faq-a"><code>connect-mcp</code> creates it automatically with the correct structure. No manual file creation needed.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Why does /mcp/sse fail?<span class="faq-arrow">▾</span></div>
+        <div class="faq-a">The <code>/sse</code> path is an internal streaming endpoint. Claude Desktop connects to <code>/mcp</code> directly. Using <code>/sse</code> causes a silent failure — your server simply won't be called.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Does this work with ngrok?<span class="faq-arrow">▾</span></div>
+        <div class="faq-a">ngrok is unreliable for MCP due to SSE connection issues. For local dev, use <code>localhost</code> directly. For external access, Cloudflare Tunnel is the recommended free alternative — it handles SSE correctly.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Can I use this with a locally built MCP server?<span class="faq-arrow">▾</span></div>
+        <div class="faq-a">Yes — that's the primary use case. Run your server, then: <code>npx connect-mcp claude --url http://localhost:8000/mcp</code>. Restart Claude Desktop and your tools are live.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section class="section">
+    <div class="sl">Roadmap</div>
+    <div class="rm-list">
+      <div class="rm-item done"><span class="ri">✔</span><span>Add / remove / list MCP servers via CLI</span></div>
+      <div class="rm-item done"><span class="ri">✔</span><span>Interactive setup wizard</span></div>
+      <div class="rm-item done"><span class="ri">✔</span><span>Config validation and auto-backup</span></div>
+      <div class="rm-item"><span class="ri" style="color:var(--text-low)">○</span><span>Cursor platform support</span></div>
+      <div class="rm-item"><span class="ri" style="color:var(--text-low)">○</span><span>VS Code (Copilot) support</span></div>
+      <div class="rm-item"><span class="ri" style="color:var(--text-low)">○</span><span>Health check — verify server starts before registering</span></div>
+      <div class="rm-item"><span class="ri" style="color:var(--text-low)">○</span><span>Import / export configs for team sharing</span></div>
+      <div class="rm-item"><span class="ri" style="color:var(--text-low)">○</span><span>MCP Hub — marketplace of ready-to-use servers</span></div>
+      <div class="rm-item"><span class="ri" style="color:var(--text-low)">○</span><span>Cloud deployment helpers</span></div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <span><span class="f-logo">connect-mcp</span> &nbsp;—&nbsp; MIT © theprathameshpundX</span>
+    <span>
+      <a href="https://github.com/theprathameshpund/connect-mcp" target="_blank">GitHub</a> &nbsp;·&nbsp;
+      <a href="https://www.npmjs.com/package/connect-mcp" target="_blank">npm</a> &nbsp;·&nbsp;
+      <a href="https://github.com/theprathameshpund/connect-mcp/issues" target="_blank">Report issue</a>
+    </span>
+  </footer>
+
+</div>
+
+<div class="toast" id="toast"><span>✔</span> Copied to clipboard</div>
+
+<script>
+// cursor glow
+const glow = document.getElementById('cursorGlow');
+document.addEventListener('mousemove', e => {
+  glow.style.left = e.clientX + 'px';
+  glow.style.top  = e.clientY + 'px';
+});
+
+// hero copy
+function quickCopy(btn) {
+  navigator.clipboard.writeText('npx connect-mcp claude --url <your-mcp-url>');
+  const o = btn.textContent; btn.textContent = 'copied!';
+  setTimeout(() => btn.textContent = o, 1800);
+  showToast();
+}
+
+// tabs
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('tab-' + name).classList.add('on');
+}
+
+// faq
+function toggleFaq(el) {
+  const item = el.parentElement;
+  const was = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+  if (!was) item.classList.add('open');
+}
+
+// toast
+let toastTimer;
+function showToast() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// copy a command block — strips the leading "$ " prompt char
+function copyBlock(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const text = el.innerText.replace(/^[$＄]\s*/, '').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'copied!'; btn.classList.add('ok');
+    setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('ok'); }, 1800);
+    showToast();
+  });
+}
+
+// live URL hint
+function onUrlInput(inp) {
+  inp.classList.remove('err');
+  const hint = document.getElementById('urlHint');
+  const v = inp.value.trim();
+  if (!v) { hint.innerHTML = ''; return; }
+
+  if (/\/sse\/?$/.test(v)) {
+    hint.innerHTML = '<span class="bad">✖ Ends with /sse — will fail silently.</span>&ensp;<span style="color:var(--text-low)">Change to <code style="font-size:10px;background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:1px 5px;color:var(--green)">/mcp</code></span>';
+  } else if (/\/mcp\/?$/.test(v)) {
+    hint.innerHTML = '<span class="good">✔ Endpoint looks correct.</span>';
+  } else {
+    hint.innerHTML = '<span class="warn">⚠ URL should end with <code style="font-size:10px;background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:1px 5px;color:var(--green)">/mcp</code></span>';
+  }
+}
+
+// generate
+function generate() {
+  const inp    = document.getElementById('mcpUrl');
+  const rawUrl = inp.value.trim();
+
+  if (!rawUrl) {
+    inp.classList.add('err');
+    inp.focus();
+    setTimeout(() => inp.classList.remove('err'), 2500);
+    return;
+  }
+
+  // normalise: strip /sse suffix, ensure ends with /mcp
+  let url = rawUrl.replace(/\/sse\/?$/, '');
+  if (!/\/mcp\/?$/.test(url)) url = url.replace(/\/?$/, '/mcp');
+
+  const e = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // ── CLI: npx connect-mcp claude --url <url>
+  document.getElementById('cmd-cli').innerHTML =
+    `<span class="p">$</span> npx connect-mcp ` +
+    `<span class="kw">claude</span> ` +
+    `<span class="fl">--url</span> <span class="vl">${e(url)}</span>`;
+
+  // ── Auto: npx connect-mcp --url <url>
+  document.getElementById('cmd-auto').innerHTML =
+    `<span class="p">$</span> npx connect-mcp ` +
+    `<span class="fl">--url</span> <span class="vl">${e(url)}</span>`;
+
+  // ── Wizard: npx connect-mcp
+  document.getElementById('cmd-wizard').innerHTML =
+    `<span class="p">$</span> npx connect-mcp <span class="cm">  # prompts for URL &amp; platform</span>`;
+
+  // ── Config JSON
+  const json = JSON.stringify({
+    mcpServers: {
+      "my-mcp-server": {
+        transport: { type: "http", url: url }
+      }
+    }
+  }, null, 2);
+  document.getElementById('cmd-json').innerHTML = colorJson(json);
+  document.getElementById('jsonPathLbl').textContent =
+    navigator.userAgent.includes('Win')
+      ? '%APPDATA%\\Claude\\claude_desktop_config.json'
+      : '~/Library/Application Support/Claude/claude_desktop_config.json';
+
+  const panel = document.getElementById('outputPanel');
+  panel.classList.add('visible');
+  setTimeout(() => panel.scrollIntoView({ behavior:'smooth', block:'nearest' }), 50);
+}
+
+function colorJson(s) {
+  return s
+    .replace(/("[\w-]+")\s*:/g, '<span class="jk">$1</span>:')
+    .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="jv">$1</span>')
+    .replace(/[{}\[\]]/g, '<span class="jp">$&</span>');
+}
+
+// Enter key on URL input
+document.getElementById('mcpUrl').addEventListener('keydown', e => {
+  if (e.key === 'Enter') generate();
+});
+</script>
+</body>
+</html>

@@ -1,22 +1,49 @@
 {
   "name": "connect-mcp",
-  "version": "1.0.0",
-  "description": "One-click MCP integration CLI",
+  "version": "0.1.0",
+  "description": "One-click MCP integration CLI for Claude Desktop and more",
   "main": "index.js",
+  "type": "commonjs",
+
   "bin": {
     "connect-mcp": "./index.js"
   },
+
   "scripts": {
     "start": "node index.js"
   },
+
   "keywords": [
     "mcp",
-    "cli",
+    "model-context-protocol",
     "ai",
-    "integration"
+    "cli",
+    "claude",
+    "integration",
+    "llm",
+    "tools"
   ],
+
   "author": "ZenithX",
   "license": "MIT",
+
+  "preferGlobal": true,
+
+  "engines": {
+    "node": ">=16"
+  },
+
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/theprathameshpund/connect-mcp.git"
+  },
+
+  "bugs": {
+    "url": "https://github.com/theprathameshpund/connect-mcp/issues"
+  },
+
+  "homepage": "https://github.com/theprathameshpund/connect-mcp#readme",
+
   "dependencies": {
     "commander": "^11.0.0",
     "fs-extra": "^11.2.0",
