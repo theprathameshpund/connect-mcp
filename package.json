@@ -1,0 +1,25 @@
+{
+  "name": "connect-mcp",
+  "version": "1.0.0",
+  "description": "One-click MCP integration CLI",
+  "main": "index.js",
+  "bin": {
+    "connect-mcp": "./index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "mcp",
+    "cli",
+    "ai",
+    "integration"
+  ],
+  "author": "ZenithX",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.0.0",
+    "fs-extra": "^11.2.0",
+    "inquirer": "^8.2.7"
+  }
+}
