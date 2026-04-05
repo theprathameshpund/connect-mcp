@@ -459,6 +459,7 @@ footer a:hover { color:var(--green); }
             <label>Platform</label>
             <select id="platform">
               <option value="claude">Claude Desktop</option>
+              <option value="cowork">Claude CoWork / Code Plugin</option>
               <option value="cursor" disabled>Cursor (soon)</option>
               <option value="vscode" disabled>VS Code (soon)</option>
             </select>
@@ -500,12 +501,14 @@ footer a:hover { color:var(--green); }
 
         <!-- AUTO / INTERACTIVE TAB -->
         <div class="tab-pane" id="tab-auto">
-          <div class="cb">
-            <div class="cb-head">
-              <span class="cb-lbl">Auto mode — omit the platform flag</span>
-              <button class="cp-btn" onclick="copyBlock('cmd-auto', this)">copy</button>
+          <div id="autoBlock">
+            <div class="cb">
+              <div class="cb-head">
+                <span class="cb-lbl">Auto mode — omit the platform flag</span>
+                <button class="cp-btn" onclick="copyBlock('cmd-auto', this)">copy</button>
+              </div>
+              <div class="cb-body" id="cmd-auto"></div>
             </div>
-            <div class="cb-body" id="cmd-auto"></div>
           </div>
 
           <div class="cb" style="margin-top:14px">
@@ -601,6 +604,7 @@ footer a:hover { color:var(--green); }
         <div class="tbl-head">Platforms</div>
         <table>
           <tr><td>Claude Desktop</td><td><span class="bdg bdg-g">✔ supported</span></td></tr>
+          <tr><td>Claude Cowork/Code</td><td><span class="bdg bdg-g">✔ supported</span></td></tr>
           <tr><td>Cursor</td><td><span class="bdg bdg-a">🚧 planned</span></td></tr>
           <tr><td>VS Code</td><td><span class="bdg bdg-a">🚧 planned</span></td></tr>
           <tr><td>Continue.dev</td><td><span class="bdg bdg-a">🚧 planned</span></td></tr>
@@ -609,7 +613,8 @@ footer a:hover { color:var(--green); }
       <div class="tbl-card">
         <div class="tbl-head">Transport</div>
         <table>
-          <tr><td>HTTP / SSE</td><td><span class="bdg bdg-g">✔ supported</span></td></tr>
+          <tr><td>HTTP</td><td><span class="bdg bdg-g">✔ supported</span></td></tr>
+          <tr><td>MCP / SSE</td><td><span class="bdg bdg-g">✔ supported</span></td></tr>
           <tr><td>Cloudflare Tunnel</td><td><span class="bdg bdg-g">✔ recommended</span></td></tr>
           <tr><td>Local command</td><td><span class="bdg bdg-g">✔ supported</span></td></tr>
           <tr><td>ngrok</td><td><span class="bdg bdg-g">✔ supported</span></td></tr>
@@ -752,6 +757,7 @@ function onUrlInput(inp) {
 function generate() {
   const inp    = document.getElementById('mcpUrl');
   const rawUrl = inp.value.trim();
+  const platform = document.getElementById('platform').value; // ✅ NEW
 
   if (!rawUrl) {
     inp.classList.add('err');
@@ -766,22 +772,36 @@ function generate() {
 
   const e = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-  // ── CLI: npx connect-mcp claude --url <url>
+  // ✅ Determine command platform
+  let commandPlatform = "claude";
+  if (platform === "cowork") {
+    commandPlatform = "cowork";
+  }
+
+  // ── CLI: dynamic platform
   document.getElementById('cmd-cli').innerHTML =
     `<span class="p">$</span> npx connect-mcp ` +
-    `<span class="kw">claude</span> ` +
+    `<span class="kw">${commandPlatform}</span> ` +
     `<span class="fl">--url</span> <span class="vl">${e(url)}</span>`;
 
   // ── Auto: npx connect-mcp --url <url>
-  document.getElementById('cmd-auto').innerHTML =
-    `<span class="p">$</span> npx connect-mcp ` +
-    `<span class="fl">--url</span> <span class="vl">${e(url)}</span>`;
+  const autoBlock = document.getElementById('autoBlock');
+
+  if (platform === "claude") {
+    autoBlock.style.display = "block";
+
+    document.getElementById('cmd-auto').innerHTML =
+      `<span class="p">$</span> npx connect-mcp ` +
+      `<span class="fl">--url</span> <span class="vl">${e(url)}</span>`;
+  } else {
+    autoBlock.style.display = "none"; // 🔥 hides EVERYTHING (label + command)
+  }
 
   // ── Wizard: npx connect-mcp
   document.getElementById('cmd-wizard').innerHTML =
     `<span class="p">$</span> npx connect-mcp <span class="cm">  # prompts for URL &amp; platform</span>`;
 
-  // ── Config JSON
+  // ── Config JSON (UNCHANGED)
   const json = JSON.stringify({
     mcpServers: {
       "my-mcp-server": {
@@ -789,7 +809,9 @@ function generate() {
       }
     }
   }, null, 2);
+
   document.getElementById('cmd-json').innerHTML = colorJson(json);
+
   document.getElementById('jsonPathLbl').textContent =
     navigator.userAgent.includes('Win')
       ? '%APPDATA%\\Claude\\claude_desktop_config.json'
@@ -797,6 +819,7 @@ function generate() {
 
   const panel = document.getElementById('outputPanel');
   panel.classList.add('visible');
+
   setTimeout(() => panel.scrollIntoView({ behavior:'smooth', block:'nearest' }), 50);
 }
 

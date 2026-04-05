@@ -2,6 +2,7 @@
 
 const { Command } = require("commander");
 const setupClaude = require("./commands/claude");
+const runCowork = require("./commands/cowork"); // 👈 NEW
 const inquirer = require("inquirer");
 
 const program = new Command();
@@ -11,25 +12,46 @@ program
   .description("One-click MCP integration tool")
   .version("1.0.0");
 
-// ✅ GLOBAL OPTION ONLY
+// ✅ GLOBAL OPTION
 program.option("--url <url>", "MCP server URL");
 
-// ✅ COMMAND: Claude (NO requiredOption here)
+// =========================================================
+// ✅ CLAUDE COMMAND (unchanged)
+// =========================================================
 program
   .command("claude")
   .description("Connect MCP to Claude Desktop")
   .action(async () => {
-    const globalOptions = program.opts();
+    const { url } = program.opts();
 
-    if (!globalOptions.url) {
+    if (!url) {
       console.error("❌ Error: --url is required");
       process.exit(1);
     }
 
-    await setupClaude(globalOptions.url);
+    await setupClaude(url);
   });
 
-// ✅ INTERACTIVE MODE
+// =========================================================
+// ✅ COWORK / CODE COMMAND (NEW)
+// =========================================================
+program
+  .command("cowork")
+  .description("Generate MCP plugin (cowork/code)")
+  .action(async () => {
+    const { url } = program.opts();
+
+    if (!url) {
+      console.error("❌ Error: --url is required");
+      process.exit(1);
+    }
+
+    await runCowork(url);
+  });
+
+// =========================================================
+// ✅ INTERACTIVE MODE (UPDATED)
+// =========================================================
 async function interactiveMode() {
   const answers = await inquirer.prompt([
     {
@@ -51,6 +73,7 @@ async function interactiveMode() {
       message: "Select platform:",
       choices: [
         { name: "Claude Desktop", value: "claude" },
+        { name: "Claude CoWork / Code Plugin", value: "cowork" }, // 👈 NEW
         { name: "Cursor (coming soon)", value: "cursor", disabled: true },
         { name: "VS Code (coming soon)", value: "vscode", disabled: true },
       ],
@@ -60,9 +83,15 @@ async function interactiveMode() {
   if (answers.platform === "claude") {
     await setupClaude(answers.url);
   }
+
+  if (answers.platform === "cowork") {
+    await runCowork(answers.url);
+  }
 }
 
+// =========================================================
 // ✅ MAIN
+// =========================================================
 async function main() {
   const args = process.argv.slice(2);
 
@@ -75,8 +104,8 @@ async function main() {
 
   const options = program.opts();
 
-  // Only --url → default to Claude
-  if (options.url && !args.includes("claude")) {
+  // Default fallback → Claude
+  if (options.url && !args.includes("claude") && !args.includes("cowork")) {
     return setupClaude(options.url);
   }
 }

@@ -1,0 +1,8 @@
+{
+  "name": "generated-mcp",
+  "description": "Loan management plugin via MCP \u2014 approve, create, and retrieve loans",
+  "version": "1.0.0",
+  "author": {
+    "name": "Your Name"
+  }
+}

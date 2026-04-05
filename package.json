@@ -1,7 +1,7 @@
 {
   "name": "connect-mcp",
-  "version": "0.1.0",
-  "description": "One-click MCP integration CLI for Claude Desktop and more",
+  "version": "0.1.1",
+  "description": "One-click MCP integration CLI for Claude Desktop and Claude cowork, Claude code",
   "main": "index.js",
   "type": "commonjs",
 
