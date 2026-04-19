@@ -1,9 +1,0 @@
-{
-  "servers": [
-    {
-      "name": "temp-mcp",
-      "url": "https://nondiseased-ciliately-lovetta.ngrok-free.dev/sse",
-      "transport": "sse"
-    }
-  ]
-}

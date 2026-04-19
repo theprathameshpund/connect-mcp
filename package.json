@@ -1,7 +1,7 @@
 {
   "name": "connect-mcp",
-  "version": "0.1.1",
-  "description": "One-click MCP integration CLI for Claude Desktop and Claude cowork, Claude code",
+  "version": "0.2.0",
+  "description": "One-click MCP integration CLI for Claude Desktop, Claude CoWork/Code, and VS Code (GitHub Copilot)",
   "main": "index.js",
   "type": "commonjs",
 
@@ -19,6 +19,8 @@
     "ai",
     "cli",
     "claude",
+    "vscode",
+    "github-copilot",
     "integration",
     "llm",
     "tools"

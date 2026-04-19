@@ -77,7 +77,7 @@ async def run_generator(url, plugin_type):
 
                 # Generate files
                 create_plugin_json(output_dir)
-                create_mcp_config(output_dir)
+                create_mcp_config(output_dir, url)
                 create_readme(output_dir, tools)
                 generate_skills(tools, output_dir)
 
