@@ -6,6 +6,16 @@ from pathlib import Path
 from utils.file_utils import ensure_dir, write_json
 
 
+def _default_marketplace():
+    return {
+        "name": "local-connect-mcp",
+        "interface": {
+            "displayName": "Local Connect MCP"
+        },
+        "plugins": []
+    }
+
+
 def _ensure_child_path(parent, child):
     parent_path = Path(parent).resolve()
     child_path = Path(child).resolve()
@@ -15,22 +25,25 @@ def _ensure_child_path(parent, child):
 
 
 def _load_marketplace(path):
-    if not os.path.exists(path):
-        return {
-            "name": "local-connect-mcp",
-            "interface": {
-                "displayName": "Local Connect MCP"
-            },
-            "plugins": []
-        }
+    if not os.path.exists(path) or os.path.getsize(path) == 0:
+        return _default_marketplace()
 
-    with open(path, "r", encoding="utf-8") as f:
-        marketplace = json.load(f)
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            marketplace = json.load(f)
+    except json.JSONDecodeError:
+        backup_path = f"{path}.invalid"
+        shutil.copy2(path, backup_path)
+        marketplace = _default_marketplace()
+
+    if not isinstance(marketplace, dict):
+        marketplace = _default_marketplace()
 
     marketplace.setdefault("name", "local-connect-mcp")
     marketplace.setdefault("interface", {})
     marketplace["interface"].setdefault("displayName", "Local Connect MCP")
-    marketplace.setdefault("plugins", [])
+    if not isinstance(marketplace.get("plugins"), list):
+        marketplace["plugins"] = []
     return marketplace
 
 
