@@ -1,11 +1,8 @@
-from mcp.client.sse import sse_client
-from mcp.client.session import ClientSession
+from mcp_local.transport import legacy_sse_session
 
 
 async def create_session(mcp_url):
-    streams = await sse_client(mcp_url).__aenter__()
-    session = await ClientSession(*streams).__aenter__()
+    session_context = legacy_sse_session(mcp_url)
+    session = await session_context.__aenter__()
 
-    await session.initialize()
-
-    return session, streams
+    return session, session_context

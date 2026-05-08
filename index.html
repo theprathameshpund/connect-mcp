@@ -1106,6 +1106,7 @@
                 <select id="platform">
                   <option value="claude">Claude Desktop</option>
                   <option value="cowork">Claude CoWork / Code Plugin</option>
+                  <option value="codex">Codex Plugin</option>
                   <option value="vscode">VS Code (GitHub Copilot)</option>
                   <option value="vscode-insiders">VS Code Insiders</option>
                   <option value="cursor" disabled>Cursor (soon)</option>
@@ -1315,6 +1316,10 @@
               <tr>
                 <td>Claude Cowork/Code</td>
                 <td><span class="bdg bdg-g">✔ supported</span></td>
+              </tr>
+              <tr>
+                <td>Codex Plugin</td>
+                <td><span class="bdg bdg-g">âœ” supported</span></td>
               </tr>
               <tr>
                 <td>VS Code (Copilot)</td>
@@ -1620,6 +1625,8 @@
         let extraArgs = "";
         if (platform === "cowork") {
           commandPlatform = "cowork";
+        } else if (platform === "codex") {
+          commandPlatform = "codex";
         } else if (platform === "vscode") {
           commandPlatform = "vscode";
         } else if (platform === "vscode-insiders") {
@@ -1653,6 +1660,9 @@
         if (platform === "vscode" || platform === "vscode-insiders") {
           document.getElementById("cliNote").innerHTML =
             `Run this, then <strong style="color:var(--text)">Reload VS Code Window</strong> (Ctrl+Shift+P → Developer: Reload Window).`;
+        } else if (platform === "codex") {
+          document.getElementById("cliNote").innerHTML =
+            `Run this to generate and register a Codex plugin, then restart Codex.`;
         } else {
           document.getElementById("cliNote").innerHTML =
             `Run this, then <strong style="color:var(--text)">restart Claude Desktop</strong>. Your MCP tools will be live.`;

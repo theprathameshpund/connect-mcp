@@ -3,6 +3,7 @@
 const { Command } = require("commander");
 const setupClaude = require("./commands/claude");
 const runCowork   = require("./commands/cowork");
+const runCodex    = require("./commands/codex");
 const setupVSCode = require("./commands/vscode");
 const inquirer    = require("inquirer");
 
@@ -11,7 +12,7 @@ const program = new Command();
 program
   .name("connect-mcp")
   .description("One-click MCP integration tool")
-  .version("0.1.2");
+  .version("0.2.1");
 
 // ✅ GLOBAL OPTION
 program.option("--url <url>", "MCP server URL");
@@ -39,6 +40,18 @@ program
     const { url } = program.opts();
     if (!url) { console.error("❌ Error: --url is required"); process.exit(1); }
     await runCowork(url);
+  });
+
+// =========================================================
+// CODEX COMMAND
+// =========================================================
+program
+  .command("codex")
+  .description("Generate MCP plugin for Codex")
+  .action(async () => {
+    const { url } = program.opts();
+    if (!url) { console.error("❌ Error: --url is required"); process.exit(1); }
+    await runCodex(url);
   });
 
 // =========================================================
@@ -78,6 +91,7 @@ async function interactiveMode() {
       choices: [
         { name: "Claude Desktop",               value: "claude"  },
         { name: "Claude CoWork / Code Plugin",  value: "cowork"  },
+        { name: "Codex Plugin",                 value: "codex"   },
         { name: "VS Code (GitHub Copilot)",      value: "vscode"  },
         { name: "VS Code Insiders",              value: "vscode-insiders" },
         { name: "Cursor (coming soon)",          value: "cursor",  disabled: true },
@@ -87,6 +101,7 @@ async function interactiveMode() {
 
   if (answers.platform === "claude")          { await setupClaude(answers.url); }
   if (answers.platform === "cowork")          { await runCowork(answers.url);   }
+  if (answers.platform === "codex")           { await runCodex(answers.url);    }
   if (answers.platform === "vscode")          { await setupVSCode(answers.url, { insiders: false }); }
   if (answers.platform === "vscode-insiders") { await setupVSCode(answers.url, { insiders: true  }); }
 }
@@ -107,7 +122,7 @@ async function main() {
   const options = program.opts();
 
   // Default fallback → Claude
-  const knownCommands = ["claude", "cowork", "vscode"];
+  const knownCommands = ["claude", "cowork", "codex", "vscode"];
   const hasCommand = knownCommands.some((c) => args.includes(c));
 
   if (options.url && !hasCommand) {

@@ -3,7 +3,7 @@ from utils.file_utils import write_file
 from config import AUTHOR_NAME
 
 
-def create_readme(plugin_root, tools):
+def create_readme(plugin_root, tools, transport="streamable-http"):
 
     readme_path = os.path.join(plugin_root, "README.md")
 
@@ -59,7 +59,7 @@ Claude (CoWork)
 Claude Plugin
         |
         v
-MCP Server (SSE)
+MCP Server ({transport})
         |
         v
 Backend System
@@ -78,7 +78,7 @@ Backend System
 ## Notes
 
 - MCP server must be running and accessible
-- Uses SSE transport
+- Uses {transport} transport
 - Plugin generated automatically from MCP server
 
 ---

@@ -1,6 +1,6 @@
 # 🚀 connect-mcp
 
-> Connect any MCP server to Claude Desktop, Claude CoWork/Code **or VS Code** in seconds — no config editing, no guesswork.
+> Connect any MCP server to Claude Desktop, Claude CoWork/Code, Codex **or VS Code** in seconds — no config editing, no guesswork.
 
 ---
 
@@ -40,6 +40,12 @@ npx connect-mcp --url http://localhost:8000/mcp vscode
 ```
 Reload VS Code → Open GitHub Copilot Chat → Agent mode → 🔌 icon → Server is live ✅
 
+### Codex Plugin
+```bash
+npx connect-mcp --url http://localhost:8000/mcp codex
+```
+Creates the Codex plugin and registers it in the local Codex marketplace.
+
 ---
 
 ## 🔌 Supported Platforms
@@ -48,6 +54,7 @@ Reload VS Code → Open GitHub Copilot Chat → Agent mode → 🔌 icon → Ser
 |----------------------------|--------|
 | Claude Desktop             | ✅      |
 | Claude CoWork / Code       | ✅      |
+| Codex Plugin               | ✅ NEW  |
 | VS Code (GitHub Copilot)   | ✅ NEW  |
 | VS Code Insiders           | ✅ NEW  |
 | Cursor                     | 🚧 Coming soon |
@@ -78,6 +85,11 @@ npx connect-mcp --url <MCP_URL> --insiders vscode
 npx connect-mcp --url <MCP_URL> cowork
 ```
 
+**Codex Plugin:**
+```bash
+npx connect-mcp --url <MCP_URL> codex
+```
+
 ---
 
 ### 2️⃣ Direct URL (Auto Claude Mode)
@@ -95,7 +107,7 @@ npx connect-mcp
 
 👉 Prompts you for:
 - MCP server URL
-- Platform (Claude Desktop / CoWork / **VS Code** / VS Code Insiders)
+- Platform (Claude Desktop / CoWork / **Codex** / **VS Code** / VS Code Insiders)
 
 ---
 

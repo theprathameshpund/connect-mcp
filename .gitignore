@@ -1,4 +1,10 @@
 node_modules
 commands.txt
 venv
+plugins
 generated_plugin
+Generated_Plugins
+.agents
+plugins
+__pycache__
+*.pyc
